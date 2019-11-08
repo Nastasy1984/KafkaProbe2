@@ -8,7 +8,8 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.KafkaFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,7 +21,8 @@ import java.util.Map;
 import java.util.Properties;
 
 public class KafkaProbe {
-    private static final String TOPIC = "tra-ta-ta";
+    private static final Logger LOG = LoggerFactory.getLogger(KafkaProbe.class.getName());
+    private static final String TOPIC = "tttopic";
     private static final String HOST = "localhost:9092";
     private static boolean flagExit = false;
 
@@ -29,7 +31,8 @@ public class KafkaProbe {
 
         new Thread(
                 () -> {runProducerWithUserInput();
-                flagExit = true;}
+                flagExit = true;
+                }
         ).start();
 
         new Thread(
@@ -56,6 +59,7 @@ public class KafkaProbe {
                 System.out.printf("offset = %d, value = %s%n",
                         record.offset(), record.value());
         }
+        consumer.close();
     }
 
     private static void runProducerWithUserInput(){
@@ -80,17 +84,20 @@ public class KafkaProbe {
             }
         }
         catch(IOException e){
-            e.printStackTrace();
+            LOG.error("runProducerWithUserInput caught {}", e.getClass().getName());
+            LOG.error("Stack trace {}", e.getStackTrace());
         }
-        //closing
-        producer.close();
+        finally {
+            //closing
+            producer.close();
+        }
     }
 
     private static void startTopic(){
-        Properties config = new Properties();
-        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, HOST);
+        Properties props = new Properties();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, HOST);
 
-        AdminClient admin = AdminClient.create(config);
+        AdminClient admin = AdminClient.create(props);
 
         Map<String, String> configs = new HashMap<>();
         int partitions = 1;
@@ -98,6 +105,6 @@ public class KafkaProbe {
 
         CreateTopicsResult result =
                 admin.createTopics(Arrays.asList(new NewTopic(TOPIC, partitions, replication).configs(configs)));
-        KafkaFuture<Void> all = result.all();
+        result.all();
     }
 }
