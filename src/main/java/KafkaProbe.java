@@ -1,23 +1,31 @@
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaFuture;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class KafkaProbe {
-    private static final String TOPIC = "probe-topic";
+    private static final String TOPIC = "tra-ta-ta";
     private static final String HOST = "localhost:9092";
     private static boolean flagExit = false;
 
     public static void main(String[] args) {
+        startTopic();
 
         new Thread(
                 () -> {runProducerWithUserInput();
@@ -76,5 +84,20 @@ public class KafkaProbe {
         }
         //closing
         producer.close();
+    }
+
+    private static void startTopic(){
+        Properties config = new Properties();
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, HOST);
+
+        AdminClient admin = AdminClient.create(config);
+
+        Map<String, String> configs = new HashMap<>();
+        int partitions = 1;
+        short replication = 1;
+
+        CreateTopicsResult result =
+                admin.createTopics(Arrays.asList(new NewTopic(TOPIC, partitions, replication).configs(configs)));
+        KafkaFuture<Void> all = result.all();
     }
 }
